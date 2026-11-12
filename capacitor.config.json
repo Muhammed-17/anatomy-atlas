@@ -1,0 +1,7 @@
+{
+  "appId": "com.example.anatomyatlas",
+  "appName": "3D Anatomy Atlas",
+  "webDir": "www",
+  "backgroundColor": "#0f1519",
+  "android": { "allowMixedContent": false }
+}
