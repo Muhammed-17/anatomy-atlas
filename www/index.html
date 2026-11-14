@@ -157,14 +157,14 @@ const $=id=>document.getElementById(id);
 const stage=$('stage');
 
 /* ---------- renderer ---------- */
-let renderer;
-try{ renderer=new THREE.WebGLRenderer({antialias:true,alpha:true}); }
-catch(e){ stage.insertAdjacentHTML('beforeend','<p class="fail">3D rendering is not available on this device. Try a browser that supports WebGL.</p>'); $('load').hidden=true; return; }
 const qs=new URLSearchParams(location.search);
 const mobile=window.Capacitor?true:qs.get('tier')?qs.get('tier')==='mobile':(matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<820)||(navigator.deviceMemory&&navigator.deviceMemory<=3);
+let renderer;
+try{ renderer=new THREE.WebGLRenderer({antialias:!mobile,alpha:true,powerPreference:'high-performance'}); }
+catch(e){ stage.insertAdjacentHTML('beforeend','<p class="fail">3D rendering is not available on this device. Try a browser that supports WebGL.</p>'); $('load').hidden=true; return; }
 const female=location.hash==='#female';
 const DIR=female?'f/':(mobile?'m/':'d/');
-renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,mobile?1.5:2));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,mobile?1:2));
 renderer.outputEncoding=THREE.sRGBEncoding; renderer.toneMapping=THREE.LinearToneMapping; renderer.toneMappingExposure=.92;
 renderer.setClearColor(0x000000,0);
 const canvas=renderer.domElement; stage.insertBefore(canvas,stage.firstChild);
@@ -195,7 +195,7 @@ ring.position.y=-.003; scene.add(ring);
 const SYSNAME=['Skin & surface regions','Muscular system','Skeletal system','Joints & ligaments','Cardiovascular system','Viscera (digestive, respiratory, urinary, glands)','Nervous system & sense organs','Lymphoid organs'];
 const SYSCOL=['#e2b095','#b54a40','#e6dcc2','#d9c9a3','#c8322f','#c47a68','#f0cf5a','#97bf5a'];
 const DEFS=[{vis:true,op:.12},{vis:false,op:1},{vis:true,op:1},{vis:false,op:1},{vis:true,op:1},{vis:true,op:1},{vis:false,op:1},{vis:false,op:1}];
-const START=[0,2,4,5];
+const START=mobile?[0,2]:[0,2,4,5];
 const SIDE={l:'Left',r:'Right'};
 const VIEWS=[['Whole body',[0,.9,0],3.6],['Head & neck',[0,1.6,.02],.8],['Chest',[0,1.3,.04],1],['Abdomen',[0,1.05,.03],1],['Pelvis',[0,.9,.03],1],['Lower limb',[0,.5,.03],1.8]];
 const ATT=8;
@@ -226,7 +226,10 @@ async function init(meta,details){
   /* materials */
   const PH={0:{r:.5,cc:0,e:.5},1:{r:.55,cc:.12,e:.55},2:{r:.7,cc:0,e:.4},3:{r:.55,cc:.08,e:.45},4:{r:.42,cc:.3,e:.65},5:{r:.58,cc:.08,e:.42},6:{r:.5,cc:.15,e:.55},7:{r:.5,cc:.1,e:.55}};
   const pulse={value:0};
-  const mkMat=(s,hl)=>{const P=PH[s]||PH[1];const m=new THREE.MeshPhysicalMaterial({color:0xffffff,vertexColors:true,roughness:hl?P.r*.8:P.r,metalness:0,clearcoat:P.cc,clearcoatRoughness:.35,envMapIntensity:P.e,side:THREE.DoubleSide});
+  const mkMat=(s,hl)=>{const P=PH[s]||PH[1];
+    const m=mobile
+      ? new THREE.MeshStandardMaterial({color:0xffffff,vertexColors:true,roughness:hl?P.r*.8:P.r,metalness:0,envMapIntensity:P.e,side:THREE.FrontSide})
+      : new THREE.MeshPhysicalMaterial({color:0xffffff,vertexColors:true,roughness:hl?P.r*.8:P.r,metalness:0,clearcoat:P.cc,clearcoatRoughness:.35,envMapIntensity:P.e,side:THREE.DoubleSide});
     if(hl){m.emissive=new THREE.Color(0x2a1608);m.emissiveIntensity=1;m.envMapIntensity=P.e*1.2;
       m.onBeforeCompile=sh=>{sh.uniforms.uPulse=pulse;
         sh.fragmentShader=sh.fragmentShader.replace('uniform vec3 emissive;','uniform vec3 emissive;\nuniform float uPulse;').replace('vec3 totalEmissiveRadiance = emissive;','vec3 totalEmissiveRadiance = emissive + vec3(1.0,0.6,0.18)*(0.10+0.16*uPulse) + vColor*0.42;');};}m.userData={s:s};return m;};
@@ -498,7 +501,7 @@ async function init(meta,details){
   SYS.forEach((S,i)=>{S.vis=DEFS[i].vis&&!!loaded[i];}); syncLayers();
   refresh(); $('load').hidden=true; frame();
   const heart=N.find(n=>n.en==='Heart'&&n.s===5)||N.find(n=>/^heart$/i.test(n.en));
-  if(heart) select(heart,true);
+  if(heart&&!mobile) select(heart,true);
   window.__atlas={cam:camera,meshes:()=>allMeshes.length,nodes:N.length,select:i=>select(N[i],true),N:N,mobile:mobile};
 }
 })();

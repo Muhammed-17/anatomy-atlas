@@ -4,7 +4,7 @@ android {
     namespace = "com.example.anatomyatlas"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.example.anatomyatlas"
+        applicationId "com.afaq.anatomyatlas"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
@@ -16,8 +16,28 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            def keystorePropertiesFile = rootProject.file('keystore.properties')
+            if (keystorePropertiesFile.exists()) {
+                def keystoreProperties = new Properties()
+                keystorePropertiesFile.withInputStream { keystoreProperties.load(it) }
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            } else {
+                gradle.taskGraph.whenReady { taskGraph ->
+                    if (taskGraph.hasTask(':app:assembleRelease') || taskGraph.hasTask(':app:bundleRelease')) {
+                        throw new GradleException("Release keystore configuration not found at " + keystorePropertiesFile.absolutePath + ". Copy keystore.properties.example to keystore.properties and set valid signing credentials.")
+                    }
+                }
+            }
+        }
+    }
     buildTypes {
         release {
+            signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
